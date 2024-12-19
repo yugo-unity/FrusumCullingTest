@@ -1,0 +1,55 @@
+﻿#pragma kernel InstancingCullLOD
+
+struct InstanceData
+{
+    float4x4 worldMatrix;
+    float4x4 worldMatrixInverse;
+    float3 boundCenter;
+    float3 boundExtents;
+};
+
+float3 _CameraPos;
+float _LODThreshold;
+StructuredBuffer<InstanceData> _PerInstanceData;
+StructuredBuffer<float4> _FrustumPlanes;
+RWStructuredBuffer<uint> _NearIndexes;
+RWStructuredBuffer<uint> _MidIndexes;
+
+// skip for loop by considering Structured-Of-Array
+// also skip near and far clips
+bool TestAABBFrustum(float3 bounds, float3 boundExtents)
+{
+    float4 cx = bounds.xxxx;
+    float4 cy = bounds.yyyy;
+    float4 cz = bounds.zzzz;
+    float4 distances = _FrustumPlanes[0] * cx + _FrustumPlanes[1] * cy + _FrustumPlanes[2] * cz + _FrustumPlanes[3];
+    float4 ex = boundExtents.xxxx;
+    float4 ey = boundExtents.yyyy;
+    float4 ez = boundExtents.zzzz;
+    float4 radii = abs(_FrustumPlanes[0]) * ex + abs(_FrustumPlanes[1]) * ey + abs(_FrustumPlanes[2]) * ez;
+    bool4 isCulled = (distances + radii) < float4(0, 0, 0, 0);
+    return any(isCulled);
+}
+
+[numthreads(64, 1, 1)]
+void InstancingCullLOD(uint id : SV_DispatchThreadID)
+{
+    InstanceData data = _PerInstanceData[id];
+
+    if (TestAABBFrustum(data.boundCenter, data.boundExtents))
+        return;
+    
+    float3 position = float3(data.worldMatrix[0].w, data.worldMatrix[1].w, data.worldMatrix[2].w);
+    float dist = length(position - _CameraPos);
+    
+    if (dist >= _LODThreshold)
+    {
+        int index = _MidIndexes.IncrementCounter();
+        _MidIndexes[index] = id;
+    }
+    else
+    {
+        int index = _NearIndexes.IncrementCounter();
+        _NearIndexes[index] = id;
+    }
+}
