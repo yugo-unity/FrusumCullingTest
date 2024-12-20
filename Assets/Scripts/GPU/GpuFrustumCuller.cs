@@ -46,12 +46,12 @@ public class GpuFrustumCuller : MonoBehaviour
             data.worldMatrixInverse = mat.inverse;
             if (this.enabledFrustumSOA)
             {
-                data.boundMin = renderer.bounds.center;
+                data.boundPoint = renderer.bounds.center;
                 data.boundSize = renderer.bounds.extents;
             }
             else
             {
-                data.boundMin = renderer.bounds.min;
+                data.boundPoint = renderer.bounds.min;
                 data.boundSize = renderer.bounds.size;
             };
             list.Add(data);

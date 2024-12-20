@@ -12,12 +12,12 @@ namespace InstancingFeature
         public static readonly int LodThreshold = Shader.PropertyToID("_LODThreshold");
         public static readonly int Color = Shader.PropertyToID("_Color");
         public static readonly int FrustumPlanesID = Shader.PropertyToID("_FrustumPlanes");
-        public static readonly int InstancingDataID = Shader.PropertyToID("_PerInstanceData");
-        public static readonly int InstancingIndexes = Shader.PropertyToID("_InstancingIndexes");
-        public static readonly int[] LodIndexId = new[]
+        public static readonly int InstanceDataID = Shader.PropertyToID("_InstanceData");
+        public static readonly int InstanceIndexes = Shader.PropertyToID("_InstanceIndexes");
+        public static readonly int[] LodIndexId =
         {
-            Shader.PropertyToID("_NearIndexes"),
-            Shader.PropertyToID("_MidIndexes"),
+            Shader.PropertyToID("_Lod0Indexes"),
+            Shader.PropertyToID("_Lod1Indexes"),
         };
     }
 
@@ -36,7 +36,7 @@ namespace InstancingFeature
     {
         public float4x4 worldMatrix;
         public float4x4 worldMatrixInverse;
-        public float3 boundMin;
+        public float3 boundPoint;
         public float3 boundSize;
     }
     
@@ -99,7 +99,7 @@ namespace InstancingFeature
             this.lodArgsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments, Constants.MaxLOD, GraphicsBuffer.IndirectDrawIndexedArgs.size);
             this.lodArgsBuffer.SetData(argsArray);
             
-            compute.SetBuffer(Constants.CullLODKernelIndex, ShaderProp.InstancingDataID, this.instanceBuffer);
+            compute.SetBuffer(Constants.CullLODKernelIndex, ShaderProp.InstanceDataID, this.instanceBuffer);
             compute.SetFloat(ShaderProp.LodThreshold, lodThreshold);
             
             var indexBufferTarget = GraphicsBuffer.Target.Structured | GraphicsBuffer.Target.Counter;
@@ -108,8 +108,8 @@ namespace InstancingFeature
                 this.lodIndeciesBuffers[i] = new GraphicsBuffer(indexBufferTarget, maxCount, Constants.IntByteSize);
                 compute.SetBuffer(Constants.CullLODKernelIndex, ShaderProp.LodIndexId[i], this.lodIndeciesBuffers[i]);
                 this.mpb[i] = new MaterialPropertyBlock();
-                this.mpb[i].SetBuffer(ShaderProp.InstancingDataID, this.instanceBuffer);
-                this.mpb[i].SetBuffer(ShaderProp.InstancingIndexes, this.lodIndeciesBuffers[i]);
+                this.mpb[i].SetBuffer(ShaderProp.InstanceDataID, this.instanceBuffer);
+                this.mpb[i].SetBuffer(ShaderProp.InstanceIndexes, this.lodIndeciesBuffers[i]);
                 this.renderParams[i] = new RenderParams()
                 {
                     layer = 0,

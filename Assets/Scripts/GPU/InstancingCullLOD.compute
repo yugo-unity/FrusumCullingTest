@@ -1,19 +1,13 @@
 ﻿#pragma kernel InstancingCullLOD
 
-struct InstanceData
-{
-    float4x4 worldMatrix;
-    float4x4 worldMatrixInverse;
-    float3 boundMin;
-    float3 boundSize;
-};
+#include "Assets/Scripts/GPU/InstanceDta.hlsl"
 
 float3 _CameraPos;
 float _LODThreshold;
-StructuredBuffer<InstanceData> _PerInstanceData;
+StructuredBuffer<InstanceData> _InstanceData;
 StructuredBuffer<float4> _FrustumPlanes; // xyz-normal, w-distance
-RWStructuredBuffer<uint> _NearIndexes;
-RWStructuredBuffer<uint> _MidIndexes;
+RWStructuredBuffer<uint> _Lod0Indexes;
+RWStructuredBuffer<uint> _Lod1Indexes;
 
 inline float3 GetPositivePoint(float3 min, float3 size, float3 normal)
 {
@@ -23,18 +17,14 @@ inline float3 GetNegativePoint(float3 min, float3 size, float3 normal)
 {
     return step(normal, 0) * size + min;
 }
-
-// Planeと指定した座標との距離を計算する
 float GetDistance(float4 plane, float3 pos)
 {
     return dot(plane.xyz, pos) + plane.w;
 }
-
 int TestAABBFrustum(float3 boundMin, float3 boundSize)
 {
     int result = 1; // inside
     
-    // _FrustumPlanesは6個前提で処理する
     for (int i = 0; i < 6; i++)
     {
         float4 plane = _FrustumPlanes[i];
@@ -51,27 +41,25 @@ int TestAABBFrustum(float3 boundMin, float3 boundSize)
     return result;
 }
 
-// 距離カリングとメッシュLODを行う
 [numthreads(64, 1, 1)]
 void InstancingCullLOD(uint id : SV_DispatchThreadID)
 {
-    InstanceData data = _PerInstanceData[id];
+    InstanceData data = _InstanceData[id];
 
-    int cullResult = TestAABBFrustum(data.boundMin, data.boundSize);
+    int cullResult = TestAABBFrustum(data.boundPoint, data.boundSize);
     if (cullResult == 0)
         return;
     
     float3 position = float3(data.worldMatrix[0].w, data.worldMatrix[1].w, data.worldMatrix[2].w);
     float dist = length(position - _CameraPos);
-    
     if (dist >= _LODThreshold)
     {
-        int index = _MidIndexes.IncrementCounter();
-        _MidIndexes[index] = id;
+        int index = _Lod1Indexes.IncrementCounter();
+        _Lod1Indexes[index] = id;
     }
     else
     {
-        int index = _NearIndexes.IncrementCounter();
-        _NearIndexes[index] = id;
+        int index = _Lod0Indexes.IncrementCounter();
+        _Lod0Indexes[index] = id;
     }
 }
