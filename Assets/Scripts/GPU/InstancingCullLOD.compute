@@ -1,9 +1,10 @@
 ﻿#pragma kernel InstancingCullLOD
 
-#include "Assets/Scripts/GPU/InstanceDta.hlsl"
+#include "./InstanceData.hlsl"
 
 float3 _CameraPos;
 float _LODThreshold;
+float _HalfFOV;
 StructuredBuffer<InstanceData> _InstanceData;
 StructuredBuffer<float4> _FrustumPlanes; // xyz-normal, w-distance
 RWStructuredBuffer<uint> _Lod0Indexes;
@@ -18,7 +19,7 @@ inline float3 GetNegativePoint(float3 min, float3 size, float3 normal)
     return step(normal, 0) * size + min;
 }
 float GetDistance(float4 plane, float3 pos)
-{
+{   
     return dot(plane.xyz, pos) + plane.w;
 }
 int TestAABBFrustum(float3 boundMin, float3 boundSize)
@@ -52,14 +53,15 @@ void InstancingCullLOD(uint id : SV_DispatchThreadID)
     
     float3 position = float3(data.worldMatrix[0].w, data.worldMatrix[1].w, data.worldMatrix[2].w);
     float dist = length(position - _CameraPos);
-    if (dist >= _LODThreshold)
-    {
-        int index = _Lod1Indexes.IncrementCounter();
-        _Lod1Indexes[index] = id;
-    }
-    else
+    float frustumHeight = 2.0 * dist * tan(_HalfFOV);
+    if (data.boundSize.y / frustumHeight > _LODThreshold)
     {
         int index = _Lod0Indexes.IncrementCounter();
         _Lod0Indexes[index] = id;
+    }
+    else
+    {
+        int index = _Lod1Indexes.IncrementCounter();
+        _Lod1Indexes[index] = id;
     }
 }

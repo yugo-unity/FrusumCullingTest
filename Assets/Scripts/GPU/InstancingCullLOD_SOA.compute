@@ -1,13 +1,15 @@
 ﻿#pragma kernel InstancingCullLOD
 
-#include "Assets/Scripts/GPU/InstanceDta.hlsl"
+#include "./InstanceData.hlsl"
 
-float3 _CameraPos;
-float _LODThreshold;
-StructuredBuffer<InstanceData> _InstanceData;
-StructuredBuffer<float4> _FrustumPlanes;
-RWStructuredBuffer<uint> _Lod0Indexes;
-RWStructuredBuffer<uint> _Lod1Indexes;
+uniform float3 _CameraPos;
+uniform float _LODThreshold;
+uniform float _TanFOV;
+uniform int _InstanceCount;
+uniform StructuredBuffer<InstanceData> _InstanceData;
+uniform StructuredBuffer<float4> _FrustumPlanes;
+uniform RWStructuredBuffer<uint> _Lod0Indexes;
+uniform RWStructuredBuffer<uint> _Lod1Indexes;  
 
 // skip for loop by considering Structured-Of-Array
 // also skip near and far clips
@@ -28,9 +30,11 @@ bool TestAABBFrustum(float3 bounds, float3 boundExtents)
     return any(isCulled);
 }
 
-[numthreads(64, 1, 1)] // TODO fujioka: thread数は適当なので要考慮
+[numthreads(64, 1, 1)]
 void InstancingCullLOD(uint id : SV_DispatchThreadID)
 {
+    if (id > _InstanceCount)
+        return;
     InstanceData data = _InstanceData[id];
 
     if (TestAABBFrustum(data.boundPoint, data.boundSize))
@@ -38,14 +42,15 @@ void InstancingCullLOD(uint id : SV_DispatchThreadID)
     
     float3 position = float3(data.worldMatrix[0].w, data.worldMatrix[1].w, data.worldMatrix[2].w);
     float dist = length(position - _CameraPos);
-    if (dist >= _LODThreshold)
-    {
-        int index = _Lod1Indexes.IncrementCounter();
-        _Lod1Indexes[index] = id;
-    }
-    else
+    float frustumHeight = dist * _TanFOV; // boundSize means extents here, so no need x2
+    if (data.boundSize.y > (_LODThreshold * frustumHeight))
     {
         int index = _Lod0Indexes.IncrementCounter();
         _Lod0Indexes[index] = id;
+    }
+    else
+    {
+        int index = _Lod1Indexes.IncrementCounter();
+        _Lod1Indexes[index] = id;
     }
 }
