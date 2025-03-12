@@ -24,7 +24,7 @@ public class CullingArea : MonoBehaviour
     void OnEnable()
     {
         if (this.renderers == null || this.renderers.Length == 0)
-            this.renderers = this.GetComponentsInChildren<MeshRenderer>();
+            this.renderers = this.GetComponentsInChildren<Renderer>();
     }
 
     //double start, end;
@@ -37,8 +37,8 @@ public class CullingArea : MonoBehaviour
 
         //start = Time.realtimeSinceStartupAsDouble;
         foreach (var r in this.renderers)
-            //r.forceRenderingOff = !active; // 最も軽いがCullingがスキップされるわけではない
-            r.enabled = enabled;
+            r.forceRenderingOff = !enabled; // 最も軽い
+            //r.enabled = enabled;
         //this.gameObject.SetActive(active); // Renderer.enabledと同等だがenabled時に重い
         // end = Time.realtimeSinceStartupAsDouble;
         // if (enabled)
@@ -50,7 +50,7 @@ public class CullingArea : MonoBehaviour
     {
         if (this.renderers == null || this.renderers.Length == 0)
             return;
-        if (!this.renderers[0].enabled)
+        if (!this.renderers[0].enabled || !this.visible)
             return;
         
         this.SetBoundingSphere(this.boundsSphere.w);
