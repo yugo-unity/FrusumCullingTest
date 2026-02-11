@@ -60,3 +60,7 @@ UserSettings/
 # Crashlytics generated file
 crashlytics-build.properties
 
+*.nsp
+*.nss
+*Backup*
+*_DoNotShip/*

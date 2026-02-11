@@ -11,6 +11,8 @@ public class CullingArea : MonoBehaviour
     Renderer[] renderers;
     bool visible = true;
 
+    LODGroup lodGroup;
+
     public void SetBoundingSphere(float radius)
     {
         this.boundsSphere = new float4(this.transform.position, radius);
@@ -24,7 +26,14 @@ public class CullingArea : MonoBehaviour
     void OnEnable()
     {
         if (this.renderers == null || this.renderers.Length == 0)
+        {
             this.renderers = this.GetComponentsInChildren<Renderer>();
+            // this.lodGroup = this.GetComponent<LODGroup>();
+            // this.lodGroup.ForceLOD(0);
+            // var lods = this.lodGroup.GetLODs();
+            // lods[0].renderers = this.renderers;
+            // this.lodGroup.SetLODs(lods);
+        }
     }
 
     //double start, end;
@@ -35,14 +44,16 @@ public class CullingArea : MonoBehaviour
             return;
         this.visible = enabled;
 
-        //start = Time.realtimeSinceStartupAsDouble;
+        //this.lodGroup.ForceLOD(this.visible ? 0 : 1);
+        
+        // //start = Time.realtimeSinceStartupAsDouble;
         foreach (var r in this.renderers)
             r.forceRenderingOff = !enabled; // 最も軽い
-            //r.enabled = enabled;
-        //this.gameObject.SetActive(active); // Renderer.enabledと同等だがenabled時に重い
-        // end = Time.realtimeSinceStartupAsDouble;
-        // if (enabled)
-        //     Debug.LogWarning($"ENABLED----- {end-start}");
+        //     //r.enabled = enabled;
+        // //this.gameObject.SetActive(active); // Renderer.enabledと同等だがenabled時に重い
+        // // end = Time.realtimeSinceStartupAsDouble;
+        // // if (enabled)
+        // //     Debug.LogWarning($"ENABLED----- {end-start}");
     }
 
 #if UNITY_EDITOR

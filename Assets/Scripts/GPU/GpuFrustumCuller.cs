@@ -57,8 +57,8 @@ namespace InstancingFeature
 #if UNITY_EDITOR
             if (this.createData)
                 this.GenerateInstanceData();
-#endif
             this.originalRoot.SetActive(false);
+#endif
             
             this.cam = GetComponent<Camera>();
             this.camTransform = this.cam.transform;

@@ -176,6 +176,7 @@ public class PreFrustumCuller : MonoBehaviour
 #endif
             
             spheres[i] = new BoundingSphere(this.cullingArea[i].boundsSphere.xyz, this.cullingArea[i].boundsSphere.w);
+            spheres[i] = new BoundingSphere(this.cullingArea[i].boundsSphere.xyz, 0); //this.cullingArea[i].boundsSphere.w);
         }
 
         switch (this.testType)
@@ -207,12 +208,12 @@ public class PreFrustumCuller : MonoBehaviour
     {
         if (evt.hasBecomeVisible)
         {
-            this.cullingArea[evt.index].SetVisible(true);
+            //this.cullingArea[evt.index].SetVisible(true);
             Debug.LogFormat("Sphere {0} has become visible!", evt.index);
         }
         if (evt.hasBecomeInvisible)
         {
-            this.cullingArea[evt.index].SetVisible(false);
+            //this.cullingArea[evt.index].SetVisible(false);
             Debug.LogFormat("Sphere {0} has become invisible!", evt.index);
         }
     }
